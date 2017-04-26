@@ -1,0 +1,54 @@
+<script>
+    
+    // CONSTANTS
+    var max_synapses = 100;
+    var attention = 0.8;
+    
+    var neurons = [];
+    
+    function Neuron(){
+        this.synapses = [];
+        this.addSynapse = function(arr){
+            var num = Math.floor(Math.random() * neurons.length);
+            var found = false;
+            for(var i=0; i<this.synapses.length; ++i){
+                if(this.synapses[i].neuron == num){
+                    this.synapses[i].weight = Math.min(this.synapses[i].weight + (arr[0]*attention), 1.0);
+                    found = true;
+                }
+            }
+            if(found == false){
+                this.synapses.push({
+                    neuron: num,
+                    weight: (arr[0]*attention)
+                });
+            }
+            for(var i=1; i<arr.length; ++i){
+                arr[i-1] = arr[i];
+            }
+            arr.length = arr.length - 1;
+            if(arr.length>0){
+                neurons[num].addSynapse(arr);
+            }
+        }
+        return this;
+    }
+    
+    function encode(str){
+        var arr = [];
+        for(var i=0; i<str.split("").length; ++i){
+            var value = str.charCodeAt(i) / 128;
+            arr.push(value);
+        }
+        return arr;
+    }
+    
+    window.onload = function(){
+        for(var i=0; i<100; ++i){
+            neurons[i] = new Neuron();
+        }
+        neurons[0].addSynapse(encode("hello world"));
+        console.log(neurons[0]);
+    }
+    
+</script>

@@ -1,0 +1,17 @@
+{
+  "name": "neural-net-test",
+  "version": "1.0.0",
+  "description": "A neural network testbed",
+  "main": "index.js",
+  "scripts": {
+    "test": "test",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "neural",
+    "net",
+    "test"
+  ],
+  "author": "Ronnel Davis",
+  "license": "ISC"
+}

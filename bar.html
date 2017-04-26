@@ -1,0 +1,217 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Bar Chart</title>
+    <script src="jquery.js"></script>
+    <script src="Chart.min.js"></script>
+    <script src="synaptic.js"></script>
+    <style>
+        html, body{
+            height: 100%;
+            width: 100%;
+            overflow: none;
+            margin: 0px;
+        }
+    canvas {
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+    }
+    #switchButton{
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        border-radius: 5px;
+        background: blue;
+        color: #fff;
+        font-family: 'Open Sans';
+        padding: 10px 20px;
+        cursor: pointer;
+    }
+        
+        #name{
+            background: #eee;
+            padding: 10px;
+            border: none;
+            font-family: 'Open Sans';
+            font-size: 14px;
+            border-radius: 5px;
+            outline: none;
+            position: absolute;
+            top: 20px;
+            right: 140px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container" style="width: 100%; height: 100%;">
+        <canvas id="canvas"></canvas>
+    </div>
+    
+    <input type="text" id="name" onfocus="focussed()" onblur="blurred()" />
+    <div id="switchButton" onclick="switchUser()">Add user</div>
+    
+    <script>
+        
+        function average(data){
+            var sum = 0;
+            for(var i = 0; i<data.length; ++i){
+                sum += data[i].delta;
+            }
+            return sum/data.length;
+        }
+        
+        function standardDeviation(arr1, arr2){
+            var avg1 = average(arr1);
+            var avg2 = average(arr2);
+            
+            console.log(avg1);
+            console.log(avg2);
+            
+            var squareDiffs = [];
+            
+            for(var i=0; i<arr1.length; ++i){
+                var diff1 = arr1[i].delta - avg1;
+                var diff2 = arr2[i].delta - avg2;
+                squareDiffs[i] = {
+                    delta: diff1 * diff2
+                };
+            }
+            
+            var avgSquareDiff = average(squareDiffs);
+            var stdDev = Math.sqrt(avgSquareDiff);
+            return stdDev;
+        }
+        
+        var current_user = -1;
+        var training = true;
+        
+        function switchUser(){
+            prev_key = null;
+            cur_key = null;
+            prev_timestamp = null;
+            cur_timestamp = null;
+            
+            current_user += 1;
+            barChartData.datasets.push({
+                label: document.getElementById("name").value,
+                backgroundColor: randomColor(),
+                data: []
+            });   
+            window.myBar.update();
+            
+            // NORMALISATION
+            if(current_user>0){
+                var max_length = barChartData.datasets[current_user-1].data[0];
+                for(var i=0; i<barChartData.datasets[current_user-1].data.length; ++i){
+                    if(barChartData.datasets[current_user-1].data[i] > max_length){
+                        max_length = barChartData.datasets[current_user-1].data[i];
+                    }
+                }   
+                
+                for(var i=0; i<barChartData.datasets[current_user-1].data.length; ++i){
+                    barChartData.datasets[current_user-1].data[i] /= max_length;
+                }
+                arr[current_user - 1] = barChartData.datasets[current_user-1].data;
+                window.myBar.update();
+            }
+            
+            arr.push([]);
+            
+            if(current_user == 2) Mahalanobis();
+        }
+        
+        function Mahalanobis(){
+            var sum = 0;
+            for(var i=0; i < arr[0].length; ++i){
+                sum += ((arr[0][i] - arr[1][i]) * (arr[0][i] - arr[1][i]));
+            }
+            
+            //sum /= arr[0].length;
+            sum = sum;
+            
+            alert(sum);
+        }
+        
+        
+        
+        function focussed(){ training = false; }
+        
+        function blurred(){ training = true; }
+
+        var randomColorFactor = function() {
+            return Math.round(Math.random() * 255);
+        };
+        var randomColor = function() {
+            return 'rgba(' + randomColorFactor() + ',' + randomColorFactor() + ',' + randomColorFactor() + ',.5)';
+        };
+
+        var barChartData = {
+            labels: [],
+            datasets: []
+        };
+        
+        var prev_key;
+        var cur_key;
+        
+        var prev_timestamp;
+        var cur_timestamp;
+        
+        var arr = [];
+        
+        window.onkeypress = function(e){
+            if(!training) return;
+            
+            var key = e.keyCode || e.which;
+            prev_key = cur_key;
+            cur_key = key;
+            
+            var time = new Date().getTime();
+            prev_timestamp = cur_timestamp;
+            cur_timestamp = time;
+            
+            if(prev_timestamp != null){
+                arr[current_user].push({
+                    from: prev_key,
+                    to: cur_key,
+                    delta: (cur_timestamp - prev_timestamp)
+                });
+                
+                if(current_user == 0){
+                    barChartData.labels.push( "'"+String.fromCharCode(prev_key) + "' - '" + String.fromCharCode(cur_key)+"'");
+                }
+                barChartData.datasets[current_user].data.push(cur_timestamp - prev_timestamp);
+                window.myBar.update();
+                
+            };
+        }
+        
+        
+        
+
+        window.onload = function() {
+            var ctx = document.getElementById("canvas").getContext("2d");
+            window.myBar = new Chart(ctx, {
+                type: 'line',
+                data: barChartData,
+                options: {
+                    responsive: true,
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Typing analyser 3000'
+                    }
+                }
+            });
+
+        };
+
+        
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,52 @@
+
+<script src="synaptic.js"></script>
+<script src="jquery.js"></script>
+
+
+<script>
+    
+    var testSentence = "Apple acquires Indian machine learning company Tuplejump";
+    var trainingData = [
+        "Shanhai Capital to Acquire Analogix Semiconductor",
+        "Shanhai Capital to Acquire Analogix Semiconductor",
+        "Shanhai Capital to Acquire Analogix Semiconductor",
+        "Apple acquires Indian machine learning company Tuplejump | love wordpress on WordPress.com",
+        "Apple acquires Indian machine learning company Tuplejump",
+        "Marriott International acquires Starwood to create world's largest hotel group"
+    ];
+    
+    var outputs = [0, 0, 0, 1, 1, 0];
+    
+    window.onload = function(){
+        testSentence = testSentence.split(" ");
+        var intArray = [];
+        
+        for(var i=0; i<testSentence.length; ++i){
+            var testWord = testSentence[i].toLowerCase();
+            if(intArray[i] == null){
+                intArray[i] = i;
+                for(var j=i; j<testSentence.length; ++j){
+                    if(testWord == testSentence[j].toLowerCase()){
+                        intArray[j] = i;
+                    }
+                }
+            }
+        }
+        
+        document.write(intArray);
+    }
+
+    $(document).ready(function(){
+        $.ajax("https://gateway-a.watsonplatform.net/calls/data/GetNews?apikey=333032eee815b81d1ce0d023b950d08d6b24c33e&outputMode=json&start=now-1d&end=now&count=100&q.enriched.url.enrichedTitle.relations.relation=|action.verb.text=acquire,object.entities.entity.type=Company|&return=enriched.url.title").done(function(obj){
+            var arr = obj.result.docs;
+            
+            for(var elem in arr){
+                //document.body.innerHTML += arr[elem].source.enriched.url.title+"<br />";
+            }
+        });
+    });
+
+
+</script>
+
+

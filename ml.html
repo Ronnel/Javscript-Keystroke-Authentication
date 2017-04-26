@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Neural network testbed</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600' rel='stylesheet' type='text/css'>
+        
+        <script src="jquery.js"></script>
+        <script src="ConvNet.js"></script>
+        
+        <script>
+            
+            var characters = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z', ' ', ',', '.'];
+            
+            var mode = "train";
+            var typeStartTime;
+            
+            var trainingData = [];
+            var rawData = [];
+            var UDtimes = [];
+            var DUtimes = [];
+            var neuralData = [];
+            
+            var maxMin = [];
+            
+            var layer_defs = [];
+            // input layer of size 1x1x2 (all volumes are 3D)
+            layer_defs.push({type:'input', out_sx:1, out_sy:1, out_depth:20});
+            // some fully connected layers
+            layer_defs.push({type:'fc', num_neurons:10, activation:'sigmoid'}); // x->1/(1+e^(-x))
+            // a softmax classifier predicting probabilities for two classes: 0,1
+            layer_defs.push({type:'svm', num_classes:1});
+
+            // create a net out of it
+            var net = new convnetjs.Net();
+            net.makeLayers(layer_defs);
+            var trainer = new convnetjs.SGDTrainer(net, {learning_rate:0.4, momentum:0.2, l2_decay: 0.3});
+            
+            console.log("CREATED NEURAL NETWORK");    
+            
+            function changeMode(){
+                
+                if(mode == "train"){
+                    mode = "test";
+                    $("#status").html("Currently in testing mode");
+                    $('.change').html("testing");
+                }
+                else{
+                    mode = "train";
+                    $("#status").html("Currently in training mode");
+                    $('.change').html("training");
+                }
+                
+            }
+            
+            Array.prototype.normalize = function(){
+                // NORMALISATION
+                var dataMax = Math.max.apply(null, this);
+                var dataMin = 0;
+
+                for(var obj in this)
+                    this[obj] = (this[obj] - dataMin) / (dataMax - dataMin);
+            }
+            
+            
+            function train(){
+                
+                document.getElementById("input").value = "";
+                
+                // INTERLACE DATA
+                rawData = [];
+                for(var i = 0; i<DUtimes.length; i++){
+                    rawData[i*2] = DUtimes[i];
+                    if(UDtimes[i] != undefined)
+                        rawData[(i*2)+1] = UDtimes[i];
+                }
+                
+                maxMin = [];
+                maxMin[0] = 0;
+                for(var i = 1; i<rawData.length - 1; ++i){
+                    if(rawData[i] - rawData[i-1] < rawData[i+1] - rawData[i])
+                        maxMin[i] = 1;
+                    else    
+                        maxMin[i] = 0;
+                }
+                
+                console.log(maxMin);
+    
+                //rawData.normalize(); 
+                var x = new convnetjs.Vol(maxMin);
+                
+                
+                if(mode == "train"){
+                    for(var i = 0; i<1; ++i){
+                        trainer.train(x, 0);
+
+                        trainingData = [];
+                        for(var j=0; j<rawData.length - 1; ++j)
+                            trainingData.push(Math.floor(Math.random() * 2));
+                        trainingData[0] = 0;
+                        console.log(trainingData);
+
+                        //trainingData.sort();
+                        //trainingData.normalize();
+                        var y = new convnetjs.Vol(trainingData);
+                        //trainer.train(y, 0);
+                    }
+                    
+                    console.log("TRAINED USER DATA");
+                }
+                else{
+                    var ret = net.forward(x);
+                    console.log(ret.w);
+                }
+                
+                DUtimes = [];
+                UDtimes = [];
+                typeStartTime = null;
+            }
+
+            window.onload = function(){
+                
+                document.getElementById("input").onkeydown = function(e){
+                    var keycode = e.which || e.charCode;
+                
+                    if(keycode == 13){
+                        if(DUtimes.length == 11 && UDtimes.length == 10 && rawData.length == 0)
+                            train();
+                        else if(rawData.length != 0)
+                            rawData = [];
+                        
+                        return;
+                    }
+                    
+                    if(typeStartTime == null){
+                        typeStartTime = new Date().getTime();
+                    }
+                    else{
+                        UDtimes.push(new Date().getTime() - typeStartTime);
+                    }
+                }
+                
+                document.getElementById("input").onkeyup = function(e){
+                    var keycode = e.which || e.charCode;
+                    if(keycode == 13){
+                        if(DUtimes.length == 11 && UDtimes.length == 10 && rawData.length == 0)
+                            train();
+                        return;
+                    }
+                    else if(rawData.length != 0){
+                        rawData = [];
+                    }
+                    DUtimes.push(new Date().getTime() - typeStartTime);
+                }
+            
+            }
+            
+            
+        </script>
+        <style>
+            html, body{
+                margin: 0px;
+                height: 100%;
+                width: 100%;
+                overflow: hidden;
+                font-family: 'Open Sans', sans-serif;
+                /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#3f3251+0,002025+100 */
+                background: rgb(63,50,81); /* Old browsers */
+                background: -moz-linear-gradient(45deg,  rgba(63,50,81,1) 0%, rgba(0,32,37,1) 100%); /* FF3.6-15 */
+                background: -webkit-linear-gradient(45deg,  rgba(63,50,81,1) 0%,rgba(0,32,37,1) 100%); /* Chrome10-25,Safari5.1-6 */
+                background: linear-gradient(45deg,  rgba(63,50,81,1) 0%,rgba(0,32,37,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+                filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#3f3251', endColorstr='#002025',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */
+            }
+            h1{
+                font-weight: 100;
+                font-size: 42px;
+                padding: 0px 40px;
+                color: #fff;
+            }
+            #input{
+                font-size: 28px;
+                width: 530px;
+                height: 50px;
+                margin-left: 40px;
+                margin-top: 30px;
+                border: none;
+                padding: 0px 15px;
+                border-radius: 5px;
+                outline: none;
+                background: none;
+                font-family: 'Open Sans', sans-serif;
+                border: 2px solid rgba(255, 255, 255, 1);
+                color: #fff;
+            }
+            #next{
+                padding: 5px 30px;
+                position: absolute;
+                top: 22px;
+                right: 40px;
+                border: none;
+                border-radius: 5px;
+                border: 1px solid #fff;
+                color: #fff;
+                background: none;
+                font-size: 14px;
+                font-family: 'Open Sans', sans-serif;
+                cursor: pointer;
+            }
+            #next:hover{
+                background: rgba(255, 255, 255, 0.3);
+            }
+            #tag{
+                padding: 0px;
+                font-size: 32px;
+                width: 150px;
+                height: 50px;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-left: -500px;
+                margin-top: -25px;
+            }
+            
+            
+            #user-widget{
+                width: 350px;
+                position: relative;
+            }
+            #user-entry, #user-add{
+                height: 30px;
+                border-radius: 5px;
+                border: none;
+                background: #fff;
+                padding: 0px;
+            }
+            #user-entry{
+                font-family: 'Open Sans', sans-serif;
+                color: #fff;
+                font-size: 16px;
+                width: calc(100% - 20px);
+                padding: 10px 10px;
+                outline: none;
+                font-size: 18px;
+                border-radius: 5px;
+                background: none;
+                border: 1px solid #fff;
+            }
+            #user-add{
+                width: 100px;
+                color: #000;
+                font-family: 'Open Sans', sans-serif;
+                background: rgba(255, 255, 255, 0.8);
+                font-size: 14px;
+                cursor: pointer;
+                height: 40px;
+                border-radius: 5px;
+                position: absolute;
+                right: 4px;
+                top: 6px;
+            }
+            #user-add:hover{
+                background: #fff;
+            }
+            #users{
+                margin-top: 30px;
+            }
+            #users .user{
+                height: 40px;
+                line-height: 40px;
+                padding: 5px 20px;
+                width: calc(100% - 40px);
+                font-size: 18px;    
+                border-radius: 5px;
+                margin: 5px 0px;
+                position: relative;
+                color: #fff;
+                background: rgba(0, 0, 0, 0.5);
+                cursor: pointer;
+            }
+            #users .user:hover{
+                background: rgba(255, 255, 255, 0.1);
+            }
+            #users .count{
+                position: absolute;
+                top: 10px;
+                right: 20px;
+                width: 30px;
+                height: 30px;
+                border-radius: 15px;
+                background: #3498db;
+                color: #fff;
+                line-height: 30px;
+                text-align: center;
+            }
+            #users  .user.selected{
+                background: rgba(255, 255, 255, 0.2);
+            }
+            #page2{
+                position: absolute;
+                height: calc(100% - 100px);
+                width: 100%;
+                padding-top: 20px;
+                margin-top: 80px;
+                top: 0px;
+                left: 0px;
+            }
+            #dots{
+                position: absolute;
+                height: 100%;
+                width: 100%;
+                top: 0px;
+                left: 0px;
+                background: url(dots.png);
+                background-size: 20%;
+                opacity: 0.25;
+            }
+            #page1{
+                position: absolute;
+                top: 140px;
+                border-radius: 5px;
+                bottom: 40px;
+                width: 350px;
+                right: 40px;
+                z-index: 100;
+            }
+            
+            .next{
+                right: 20px;
+                width: 270px;
+                position: absolute;
+                top: 50%;
+                padding: 5px 20px;
+                border-radius: 5px;
+                border: 1px solid #fff;
+                color: #fff;
+                cursor: pointer;
+            }
+            .next:hover{
+                background: #649faf;
+                color: #06091a;
+            }
+            
+            #header{
+                width: calc(100% - 80px);
+                height: 40px;
+                background: rgba(0, 0, 0, 0.5);
+                color: #333;
+                position: fixed;
+                top: 0px;
+                line-height: 40px;
+                font-size: 26px;
+                padding: 20px 40px;
+                color: #fff;
+                font-weight: 100;
+            }
+            
+            .detail{
+                color: #fff;
+                width: 600px;
+                margin-left: 40px;
+            }
+            
+        </style>
+    </head>
+    
+    <body>
+        <div id="dots"></div>
+        
+        <div id="header">
+            Neural network authentication testbed
+            <button id="next" onclick="changeMode()">Switch mode</button>
+        </div>
+        
+        
+        <div class="page" id="page2">
+            <h1 id="status">Currently in training mode</h1>
+            <p class='detail'>
+                You are currently in <span class="change">training</span> mode.
+                <br/><br/>
+                Start training the neural network. You can do this by typing in to the box below. 
+                We recommend training the neural network with a wide variety of words and letters. Make sure you type in words that have meaning as that gives a better approximation of your key travel times.
+                <br/><br/>
+                After completing training, you can switch mode by clicking the button on the top right and start testing the system.
+            </p>
+        
+            <input id="input" type="text" placeholder='"would there about which because"' autocorrect="false" autocomplete='off' spellcheck='false' />
+        </div>
+    
+    </body>
+</html>

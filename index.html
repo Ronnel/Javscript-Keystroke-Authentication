@@ -1,0 +1,65 @@
+<style>
+    #bar {
+        position: fixed;
+        top: 20%;
+        left: 40%;
+        width: 40%;
+        height: 40%;
+        -webkit-transition: 0.1s ease all;
+        display: flex;
+    }
+
+    .p {
+        background-color: blue;
+        height: 100%;
+        width: 10%;
+        float: left;
+        align-self: flex-end;
+    }
+
+</style>
+<script>
+    window.onload = function () {
+        audioCtx = new AudioContext();
+        analyser = audioCtx.createAnalyser();
+        source = audioCtx.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        analyser.fftSize = 64;
+
+        var frequencyData = new Uint8Array(analyser.frequencyBinCount);
+
+        function renderFrame() {
+            analyser.getByteFrequencyData(frequencyData);
+            P10.style.height = ((frequencyData[0] * 100) / 256) + "%";
+            P20.style.height = ((frequencyData[2] * 100) / 256) + "%";
+            P30.style.height = ((frequencyData[4] * 100) / 256) + "%";
+            P40.style.height = ((frequencyData[6] * 100) / 256) + "%";
+            P50.style.height = ((frequencyData[8] * 100) / 256) + "%";
+            P60.style.height = ((frequencyData[10] * 100) / 256) + "%";
+            P70.style.height = ((frequencyData[12] * 100) / 256) + "%";
+            P80.style.height = ((frequencyData[14] * 100) / 256) + "%";
+            P90.style.height = ((frequencyData[16] * 100) / 256) + "%";
+            console.log(frequencyData)
+            requestAnimationFrame(renderFrame);
+        }
+        audio.pause();
+        audio.play();
+        renderFrame();
+    };
+</script>
+
+<body>
+<audio id="audio" src="2.mp3"></audio>
+<div id="bar">
+    <div id="P10" class="p"></div>
+    <div id="P20" class="p"></div>
+    <div id="P30" class="p"></div>
+    <div id="P40" class="p"></div>
+    <div id="P50" class="p"></div>
+    <div id="P60" class="p"></div>
+    <div id="P70" class="p"></div>
+    <div id="P80" class="p"></div>
+    <div id="P90" class="p"></div>
+</div>
+</body>
